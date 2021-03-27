@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+
 public class MyCollection<E> implements Collection<E> {
 
     private int size;
@@ -41,24 +42,18 @@ public class MyCollection<E> implements Collection<E> {
     public final boolean contains(final Object o) {
 
         try {
-            if (o != null) {
-                for (int i = 0; i < size; i++) {
-                    if ((elementData[i]).equals(o)) {
+            for (int i = 0; i < size; i++) {
+                if (elementData[i] == null && o == null) {
                         return true;
+                    } else {
+                        if ((elementData[i]).equals(o)) {
+                            return true;
+                        }
                     }
-                }
-            } else {
-                for (int i = 0; i < size; i++) {
-                    if (elementData[i] == null) {
-                        return false;
-                    }
-                }
             }
-            return false;
         } catch (NullPointerException nullPointerException) {
-            throw new NullPointerException();
         }
-
+        return false;
     }
 
     @Override
@@ -69,19 +64,18 @@ public class MyCollection<E> implements Collection<E> {
 
     @Override
     public final <T> T[] toArray(final T[] a) {
-        if (a.length < size) {
+        if (a.length <= size) {
             return (T[]) Arrays.copyOf(elementData, size, a.getClass());
         }
         if (a.length > size) {
             int count = 0;
-            for (int i = 0; i < elementData.length; i++) {
+            for (int i = 0; i < size; i++) {
                 a[count] = (T) elementData[i];
                 count++;
             }
+            return (T[]) Arrays.copyOf(a, a.length, a.getClass());
         }
-
         return a;
-
     }
 
     @Override
@@ -110,26 +104,26 @@ public class MyCollection<E> implements Collection<E> {
             }
             return false;
         } catch (NullPointerException e) {
-            throw new NullPointerException();
         }
+        return false;
     }
 
 
     @Override
     public final boolean containsAll(final Collection<?> c) {
-        MyCollection<Integer> collection = (MyCollection<Integer>) c;
-        Iterator<Integer> it = collection.iterator();
-
-        for (Object e : elementData) {
-            for (Object d : collection) {
-                if (e.equals(it.next())) {
-                    return true;
+        try {
+            for (Object e : c) {
+                if (!contains(e)) {
+                    return false;
                 }
             }
-        }
+            return true;
+        } catch (NullPointerException npe) {
 
-        return false;
+        }
+        return true;
     }
+
 
 
     @Override
@@ -174,51 +168,43 @@ public class MyCollection<E> implements Collection<E> {
 
     @Override
     public final boolean retainAll(final Collection<?> c) {
-        if (c != null) {
-            final Object[] firstArr = c.toArray();
-            int len = size;
-            size = firstArr.length;
-            int r;
-            for (r = 0; r < size; r++) {
-                if (r == size - 1) {
-                    return true;
-                }
-                if (!contains(firstArr[r])) {
-                    break;
+        try {
+            boolean changes = false;
+            int count = 0;
+            for (int i = 0; i < size; i++) {
+                if (c.contains(elementData[i])) {
+                    elementData[count] = elementData[i];
+                    count++;
                 }
             }
-
-            int w = r++;
-
-            for (Object e; r < size; r++) {
-                if (contains(e = firstArr[r])) {
-                    firstArr[w] = e;
-                    return true;
+            if (count != size) {
+                for (int i = count; i < size; i++) {
+                    elementData[i] = null;
                 }
+                size = count;
+                changes = true;
             }
-            System.arraycopy(firstArr, r, firstArr, w, size - r);
-
+            return changes;
+        } catch (NullPointerException npe) {
+            throw new NullPointerException();
         }
-
-        return false;
     }
 
 
     @Override
     public final void clear() {
         for (int i = 0; i < elementData.length - 1; i++) {
-            if (elementData[i] != null) {
                 elementData[i] = null;
                 size--;
             }
-
-        }
     }
 
 
     private class MyIterator<T> implements Iterator<T> {
 
         private int cursor = 0;
+        private boolean nextPass = false;
+
 
         @Override
         public boolean hasNext() {
@@ -232,6 +218,8 @@ public class MyCollection<E> implements Collection<E> {
                 throw new NoSuchElementException();
             }
 
+            nextPass = true;
+
             return (T) elementData[cursor++];
             // так как массив объектов, то нужно использовать явное приведение
             //не страшно, так как мы используем только тип T
@@ -240,30 +228,21 @@ public class MyCollection<E> implements Collection<E> {
         @Override
         public void remove() {
 
-            if (cursor < 0) {
+            if (cursor == 0) {
                 throw new IllegalStateException("Метод next еще не был вызван");
             }
+            try {
 
-            if (cursor >= 0) {
-                try {
-                    int count = 0;
-                    for (int i = 0; i < size; i++) {
-                        if (i != cursor) {
-                            elementData[count] = elementData[i];
-                            count++;
-                        }
+
+                    for (int i = cursor; i < size; i++) {
+                        elementData[i - 1] = elementData[i];
                     }
-                    if (count != size) {
-                        for (int i = count; i < size; i++) {
-                            elementData[i] = null;
-                        }
-                        size = count;
-                    }
+                    size--;
+                    elementData = Arrays.copyOf(elementData, size);
 
                 } catch (NullPointerException e) {
-                    throw new NullPointerException();
+
                 }
             }
         }
     }
-}
